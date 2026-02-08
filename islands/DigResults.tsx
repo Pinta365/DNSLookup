@@ -5,6 +5,7 @@ export interface DigResultsProps {
   result: LookupResult | null;
   host: string;
   type: string;
+  durationMs?: number | null;
 }
 
 function formatRecord(record: unknown): string {
@@ -18,17 +19,14 @@ export default function DigResults({
   result,
   host,
   type,
+  durationMs = null,
 }: DigResultsProps) {
   const showRaw = useSignal(false);
   const copied = useSignal(false);
 
   function copyRaw() {
     if (!result || !result.ok) return;
-    const text = JSON.stringify(
-      result.raw ?? result.records,
-      null,
-      2
-    );
+    const text = JSON.stringify(result.records, null, 2);
     navigator.clipboard.writeText(text).then(() => {
       copied.value = true;
       setTimeout(() => (copied.value = false), 2000);
@@ -42,18 +40,28 @@ export default function DigResults({
       <div class="p-4 rounded-lg bg-red-50 border border-red-200 text-red-800">
         <p class="font-medium">Lookup failed</p>
         <p class="text-sm mt-1">{result.error}</p>
+        {durationMs != null && (
+          <p class="text-sm mt-1 text-red-600/80">
+            Failed after {durationMs} ms
+          </p>
+        )}
       </div>
     );
   }
 
   const { records } = result;
-  const rawJson = JSON.stringify(result.raw ?? records, null, 2);
+  const rawJson = JSON.stringify(records, null, 2);
 
   return (
     <div class="rounded-lg border border-slate-200 bg-white/80 shadow-sm overflow-hidden">
-      <div class="px-4 py-2 bg-slate-100 border-b border-slate-200 flex justify-between items-center">
+      <div class="px-4 py-2 bg-slate-100 border-b border-slate-200 flex flex-wrap justify-between items-center gap-2">
         <span class="text-sm font-medium text-slate-700">
           Results for {host} ({type})
+          {durationMs != null && (
+            <span class="ml-2 font-normal text-slate-500">
+              · Resolved in {durationMs} ms
+            </span>
+          )}
         </span>
         <div class="flex gap-2">
           <button
@@ -73,26 +81,28 @@ export default function DigResults({
         </div>
       </div>
       <div class="p-4">
-        {showRaw.value ? (
-          <pre class="text-xs font-mono overflow-x-auto bg-slate-900 text-slate-100 p-4 rounded overflow-y-auto max-h-96">
+        {showRaw.value
+          ? (
+            <pre class="text-xs font-mono overflow-x-auto bg-slate-900 text-slate-100 p-4 rounded overflow-y-auto max-h-96">
             {rawJson}
-          </pre>
-        ) : (
-          <ul class="space-y-2">
-            {records.length === 0 ? (
-              <li class="text-slate-500 text-sm">No records found.</li>
-            ) : (
-              records.map((r, i) => (
-                <li
-                  key={i}
-                  class="font-mono text-sm py-1 px-2 rounded bg-slate-50 border border-slate-100"
-                >
-                  {formatRecord(r)}
-                </li>
-              ))
-            )}
-          </ul>
-        )}
+            </pre>
+          )
+          : (
+            <ul class="space-y-2">
+              {records.length === 0
+                ? <li class="text-slate-500 text-sm">No records found.</li>
+                : (
+                  records.map((r, i) => (
+                    <li
+                      key={i}
+                      class="font-mono text-sm py-1 px-2 rounded bg-slate-50 border border-slate-100"
+                    >
+                      {formatRecord(r)}
+                    </li>
+                  ))
+                )}
+            </ul>
+          )}
       </div>
     </div>
   );

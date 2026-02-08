@@ -43,7 +43,6 @@ export interface LookupOptions {
 export interface LookupSuccess {
   ok: true;
   records: unknown[];
-  raw?: unknown;
 }
 
 export interface LookupError {
@@ -57,23 +56,21 @@ export type LookupResult = LookupSuccess | LookupError;
 export async function resolveDns(
   hostname: string,
   recordType: RecordType,
-  options: LookupOptions = {}
+  options: LookupOptions = {},
 ): Promise<LookupResult> {
-  const nameServer = options.nameServer?.ipAddr
-    ? {
-        ipAddr: options.nameServer.ipAddr,
-        port: options.nameServer.port ?? 53,
-      }
-    : undefined;
+  const resolveOptions: { nameServer?: { ipAddr: string; port: number } } = {};
+  if (options.nameServer?.ipAddr) {
+    resolveOptions.nameServer = {
+      ipAddr: options.nameServer.ipAddr,
+      port: options.nameServer.port ?? 53,
+    };
+  }
 
   try {
-    const records = await Deno.resolveDns(hostname, recordType, {
-      nameServer,
-    });
+    const records = await Deno.resolveDns(hostname, recordType, resolveOptions);
     return {
       ok: true,
       records: Array.isArray(records) ? [...records] : [records],
-      raw: records,
     };
   } catch (err) {
     const message = err instanceof Error ? err.message : String(err);

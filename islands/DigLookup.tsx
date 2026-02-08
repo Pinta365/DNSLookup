@@ -20,6 +20,7 @@ export default function DigLookup({
   const loading = useSignal(false);
   const lastHost = useSignal(initialHost);
   const lastType = useSignal(initialType);
+  const durationMs = useSignal<number | null>(null);
   const didInitialLookup = useSignal(false);
 
   async function doLookup(params: {
@@ -30,8 +31,10 @@ export default function DigLookup({
   }) {
     loading.value = true;
     result.value = null;
+    durationMs.value = null;
     lastHost.value = params.host;
     lastType.value = params.type;
+    const start = performance.now();
     try {
       const url = new URL("/api/lookup", globalThis.location.origin);
       url.searchParams.set("host", params.host);
@@ -49,6 +52,7 @@ export default function DigLookup({
         error: err instanceof Error ? err.message : "Network error",
       };
     } finally {
+      durationMs.value = Math.round(performance.now() - start);
       loading.value = false;
     }
   }
@@ -80,6 +84,7 @@ export default function DigLookup({
         result={result.value}
         host={lastHost.value}
         type={lastType.value}
+        durationMs={durationMs.value}
       />
     </div>
   );

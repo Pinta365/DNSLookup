@@ -1,5 +1,5 @@
 import { define } from "../../utils.ts";
-import { resolveDns, isSupportedType, type RecordType } from "../../lib/dns.ts";
+import { isSupportedType, type RecordType, resolveDns } from "../../lib/dns.ts";
 import { getNameserverIp } from "../../lib/nameservers.ts";
 
 const CORS_HEADERS = {
@@ -60,19 +60,22 @@ export const handler = define.handlers({
 
     const ip = getNameserverIp(
       nameserverId as "cloudflare" | "google" | "quad9" | "opendns" | "custom",
-      customNs
+      customNs,
     );
     if (nameserverId === "custom") {
       if (!ip) {
         return jsonResponse(
           { ok: false, error: "Custom nameserver IP required" },
-          400
+          400,
         );
       }
       if (isPrivateOrLocalIp(ip)) {
         return jsonResponse(
-          { ok: false, error: "Custom nameserver cannot be a private/local IP" },
-          400
+          {
+            ok: false,
+            error: "Custom nameserver cannot be a private/local IP",
+          },
+          400,
         );
       }
     }
