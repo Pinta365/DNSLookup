@@ -48,7 +48,7 @@ export function createRateLimiter(limit: number, windowMs: number) {
 }
 
 /** Default: 60 requests per minute per client. */
-export const defaultLimiter = createRateLimiter(4, 60_000);
+export const defaultLimiter = createRateLimiter(60, 60_000);
 
 /**
  * Get a stable key for the client from the request (e.g. for rate limiting).
