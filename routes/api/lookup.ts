@@ -42,10 +42,11 @@ export const handler = define.handlers({
     const url = new URL(ctx.req.url);
     const host = url.searchParams.get("host") ?? "";
     const type = (url.searchParams.get("type") ?? "A").toUpperCase();
-    const dohProviderParam = url.searchParams.get("dohProvider") ?? "cloudflare";
+    const dohProviderParam = url.searchParams.get("dohProvider") ??
+      "cloudflare";
     const dohProvider: DohProvider = VALID_DOH.includes(
-      dohProviderParam as DohProvider,
-    )
+        dohProviderParam as DohProvider,
+      )
       ? (dohProviderParam as DohProvider)
       : "cloudflare";
 

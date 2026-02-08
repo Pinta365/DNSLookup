@@ -134,7 +134,9 @@ function readName(
     }
     if (len > 63) break;
     let label = "";
-    for (let i = 0; i < len && pos < buf.length; i++) label += String.fromCharCode(buf[pos++]);
+    for (let i = 0; i < len && pos < buf.length; i++) {
+      label += String.fromCharCode(buf[pos++]);
+    }
     parts.push(label);
   }
   return { name: parts.join("."), offset: pos };
@@ -158,7 +160,9 @@ function decodeRdata(
   switch (type) {
     case 1: {
       if (rdlength < 4) break;
-      return `${buf[offset]}.${buf[offset + 1]}.${buf[offset + 2]}.${buf[offset + 3]}`;
+      return `${buf[offset]}.${buf[offset + 1]}.${buf[offset + 2]}.${
+        buf[offset + 3]
+      }`;
     }
     case 28: {
       if (rdlength < 16) break;
@@ -193,11 +197,9 @@ function decodeRdata(
           const chunk = buf.subarray(p, p + l);
           const allPrintable = Array.from(chunk).every(isPrintable);
           parts.push(
-            allPrintable
-              ? String.fromCharCode(...chunk)
-              : Array.from(chunk)
-                .map((b) => "\\x" + b.toString(16).padStart(2, "0"))
-                .join(""),
+            allPrintable ? String.fromCharCode(...chunk) : Array.from(chunk)
+              .map((b) => "\\x" + b.toString(16).padStart(2, "0"))
+              .join(""),
           );
           p += l;
         }
@@ -229,19 +231,31 @@ function decodeRdata(
       if (rdlength < 2) break;
       const flags = buf[offset];
       const tagLen = buf[offset + 1];
-      const tag = String.fromCharCode(...buf.subarray(offset + 2, offset + 2 + tagLen));
+      const tag = String.fromCharCode(
+        ...buf.subarray(offset + 2, offset + 2 + tagLen),
+      );
       const value = buf[offset + 2 + tagLen] !== undefined
         ? new TextDecoder().decode(buf.subarray(offset + 2 + tagLen, end))
         : "";
       return `${flags} ${tag} "${value}"`;
     }
     case 41: {
-      const chunk = buf.subarray(offset, Math.min(offset + rdlength, buf.length));
-      return Array.from(chunk).map((b) => b.toString(16).padStart(2, "0")).join(" ");
+      const chunk = buf.subarray(
+        offset,
+        Math.min(offset + rdlength, buf.length),
+      );
+      return Array.from(chunk).map((b) => b.toString(16).padStart(2, "0")).join(
+        " ",
+      );
     }
     default: {
-      const chunk = buf.subarray(offset, Math.min(offset + rdlength, buf.length));
-      return Array.from(chunk).map((b) => b.toString(16).padStart(2, "0")).join("");
+      const chunk = buf.subarray(
+        offset,
+        Math.min(offset + rdlength, buf.length),
+      );
+      return Array.from(chunk).map((b) => b.toString(16).padStart(2, "0")).join(
+        "",
+      );
     }
   }
   const chunk = buf.subarray(offset, Math.min(offset + rdlength, buf.length));
@@ -320,14 +334,12 @@ function decodeResponse(buf: Uint8Array): {
     rcode,
     records: answerRecords,
     ttls: answerTtls,
-    authority:
-      authRecords.length > 0
-        ? { records: authRecords, ttls: authTtls }
-        : null,
-    additional:
-      addRecords.length > 0
-        ? { records: addRecords, ttls: addTtls }
-        : null,
+    authority: authRecords.length > 0
+      ? { records: authRecords, ttls: authTtls }
+      : null,
+    additional: addRecords.length > 0
+      ? { records: addRecords, ttls: addTtls }
+      : null,
   };
 }
 

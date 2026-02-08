@@ -51,8 +51,8 @@ export default define.page(function Home(ctx) {
                 <code class="bg-slate-100 px-1 rounded">cloudflare</code>. DoH
                 resolver: cloudflare, google, quad9, mullvad, or controld (RFC
                 8484). Responses include{" "}
-                <code class="bg-slate-100 px-1 rounded">ttls</code> (seconds per
-                record).
+                <code class="bg-slate-100 px-1 rounded">ttls</code>{" "}
+                (seconds per record).
               </dd>
             </div>
           </dl>

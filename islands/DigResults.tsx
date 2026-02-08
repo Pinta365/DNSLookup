@@ -31,7 +31,9 @@ function SectionList({
           >
             <span>{formatRecord(r)}</span>
             {ttls?.[i] != null && (
-              <span class="text-slate-500 font-normal text-xs">TTL {ttls[i]}</span>
+              <span class="text-slate-500 font-normal text-xs">
+                TTL {ttls[i]}
+              </span>
             )}
           </li>
         ))}
@@ -143,8 +145,8 @@ export default function DigResults({
                     <input
                       type="checkbox"
                       checked={showAuthorityAdditional.value}
-                      onChange={() =>
-                        (showAuthorityAdditional.value = !showAuthorityAdditional.value)}
+                      onChange={() => (showAuthorityAdditional.value =
+                        !showAuthorityAdditional.value)}
                       class="rounded border-slate-300 text-emerald-600 focus:ring-emerald-500"
                     />
                     <span class="text-sm text-slate-600">
@@ -231,8 +233,8 @@ export default function DigResults({
             <input
               type="checkbox"
               checked={showAuthorityAdditional.value}
-              onChange={() =>
-                (showAuthorityAdditional.value = !showAuthorityAdditional.value)}
+              onChange={() => (showAuthorityAdditional.value =
+                !showAuthorityAdditional.value)}
               class="rounded border-slate-300 text-emerald-600 focus:ring-emerald-500"
             />
             <span class="text-sm text-slate-600">

@@ -104,8 +104,9 @@ export default function DigForm({
           <span class="text-sm font-medium text-slate-700">Record type</span>
           <select
             value={type.value}
-            onChange={(e) =>
-              (type.value = (e.target as HTMLSelectElement).value)}
+            onChange={(
+              e,
+            ) => (type.value = (e.target as HTMLSelectElement).value)}
             class={inputBase}
             title={RECORD_TYPE_HINT[type.value] ?? ""}
           >
@@ -130,8 +131,9 @@ export default function DigForm({
           </span>
           <select
             value={dohProvider.value}
-            onChange={(e) =>
-              (dohProvider.value = (e.target as HTMLSelectElement).value)}
+            onChange={(
+              e,
+            ) => (dohProvider.value = (e.target as HTMLSelectElement).value)}
             class={`${inputBase} min-w-56`}
           >
             {DOH_PROVIDERS.map((p) => (
