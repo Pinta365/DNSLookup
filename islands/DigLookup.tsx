@@ -3,18 +3,18 @@ import type { LookupResult } from "../lib/dns.ts";
 import DigForm from "./DigForm.tsx";
 import DigResults from "./DigResults.tsx";
 
+/** Props for the main lookup widget: initial URL params (host, type, dohProvider). */
 export interface DigLookupProps {
   initialHost: string;
   initialType: string;
-  initialNameserver: string;
-  initialCustomNs: string;
+  initialDohProvider: string;
 }
 
+/** Orchestrates form + results; runs initial lookup from URL and doLookup on submit. */
 export default function DigLookup({
   initialHost,
   initialType,
-  initialNameserver,
-  initialCustomNs,
+  initialDohProvider,
 }: DigLookupProps) {
   const result = useSignal<LookupResult | null>(null);
   const loading = useSignal(false);
@@ -26,8 +26,7 @@ export default function DigLookup({
   async function doLookup(params: {
     host: string;
     type: string;
-    nameserver: string;
-    customNs: string;
+    dohProvider: string;
   }) {
     loading.value = true;
     result.value = null;
@@ -39,16 +38,15 @@ export default function DigLookup({
       const url = new URL("/api/lookup", globalThis.location.origin);
       url.searchParams.set("host", params.host);
       url.searchParams.set("type", params.type);
-      url.searchParams.set("nameserver", params.nameserver);
-      if (params.nameserver === "custom" && params.customNs) {
-        url.searchParams.set("customNs", params.customNs);
-      }
+      url.searchParams.set("dohProvider", params.dohProvider);
       const res = await fetch(url.toString());
       const data = (await res.json()) as LookupResult;
       result.value = data;
     } catch (err) {
       result.value = {
         ok: false,
+        host: params.host,
+        type: params.type,
         error: err instanceof Error ? err.message : "Network error",
       };
     } finally {
@@ -65,8 +63,7 @@ export default function DigLookup({
     doLookup({
       host: initialHost,
       type: initialType,
-      nameserver: initialNameserver,
-      customNs: initialCustomNs,
+      dohProvider: initialDohProvider,
     });
   });
 
@@ -75,8 +72,7 @@ export default function DigLookup({
       <DigForm
         initialHost={initialHost}
         initialType={initialType}
-        initialNameserver={initialNameserver}
-        initialCustomNs={initialCustomNs}
+        initialDohProvider={initialDohProvider}
         onLookup={doLookup}
         loading={loading.value}
       />

@@ -1,5 +1,5 @@
 import { useSignal } from "@preact/signals";
-import { type NameserverId, NAMESERVERS } from "../lib/nameservers.ts";
+import { DOH_PROVIDERS } from "../lib/doh.ts";
 
 const RECORD_TYPES = [
   "A",
@@ -31,42 +31,37 @@ const RECORD_TYPE_HINT: Record<string, string> = {
   TXT: "Text record",
 };
 
+/** Props for the lookup form (host, type, DoH provider, submit callback). */
 export interface DigFormProps {
   initialHost: string;
   initialType: string;
-  initialNameserver: string;
-  initialCustomNs: string;
+  initialDohProvider: string;
   onLookup: (params: {
     host: string;
     type: string;
-    nameserver: string;
-    customNs: string;
+    dohProvider: string;
   }) => void;
   loading?: boolean;
 }
 
+/** Form: hostname, record type, DoH provider; submits to onLookup and syncs URL. */
 export default function DigForm({
   initialHost,
   initialType,
-  initialNameserver,
-  initialCustomNs,
+  initialDohProvider,
   onLookup,
   loading = false,
 }: DigFormProps) {
   const host = useSignal(initialHost);
   const type = useSignal(initialType);
-  const nameserver = useSignal(initialNameserver);
-  const customNs = useSignal(initialCustomNs);
+  const dohProvider = useSignal(initialDohProvider);
 
   function syncUrl() {
     const params = new URLSearchParams();
     if (host.value) params.set("host", host.value);
     if (type.value && type.value !== "A") params.set("type", type.value);
-    if (nameserver.value && nameserver.value !== "cloudflare") {
-      params.set("nameserver", nameserver.value);
-    }
-    if (nameserver.value === "custom" && customNs.value) {
-      params.set("customNs", customNs.value);
+    if (dohProvider.value !== "cloudflare") {
+      params.set("dohProvider", dohProvider.value);
     }
     const qs = params.toString();
     const url = qs
@@ -81,8 +76,7 @@ export default function DigForm({
     onLookup({
       host: host.value,
       type: type.value,
-      nameserver: nameserver.value,
-      customNs: customNs.value,
+      dohProvider: dohProvider.value,
     });
   }
 
@@ -110,9 +104,8 @@ export default function DigForm({
           <span class="text-sm font-medium text-slate-700">Record type</span>
           <select
             value={type.value}
-            onChange={(
-              e,
-            ) => (type.value = (e.target as HTMLSelectElement).value)}
+            onChange={(e) =>
+              (type.value = (e.target as HTMLSelectElement).value)}
             class={inputBase}
             title={RECORD_TYPE_HINT[type.value] ?? ""}
           >
@@ -131,40 +124,23 @@ export default function DigForm({
             </span>
           )}
         </label>
-        <div class="flex flex-col gap-3">
-          <label class="flex flex-col gap-1 min-w-0">
-            <span class="text-sm font-medium text-slate-700">Resolver</span>
-            <select
-              value={nameserver.value}
-              onChange={(e) => {
-                nameserver.value = (e.target as HTMLSelectElement)
-                  .value as NameserverId;
-              }}
-              class={`${inputBase} min-w-56`}
-            >
-              {NAMESERVERS.filter((n) => n.id !== "custom").map((n) => (
-                <option key={n.id} value={n.id}>
-                  {n.label} ({n.ip})
-                </option>
-              ))}
-              <option value="custom">Custom</option>
-            </select>
-          </label>
-          {nameserver.value === "custom" && (
-            <label class="flex flex-col gap-1 min-w-0">
-              <span class="text-sm font-medium text-slate-700">Custom IP</span>
-              <input
-                type="text"
-                value={customNs.value}
-                onInput={(
-                  e,
-                ) => (customNs.value = (e.target as HTMLInputElement).value)}
-                placeholder="1.1.1.1"
-                class={`${inputBase} font-mono text-sm min-w-56`}
-              />
-            </label>
-          )}
-        </div>
+        <label class="flex flex-col gap-1 min-w-0">
+          <span class="text-sm font-medium text-slate-700">
+            Resolver (DoH)
+          </span>
+          <select
+            value={dohProvider.value}
+            onChange={(e) =>
+              (dohProvider.value = (e.target as HTMLSelectElement).value)}
+            class={`${inputBase} min-w-56`}
+          >
+            {DOH_PROVIDERS.map((p) => (
+              <option key={p.id} value={p.id}>
+                {p.label}
+              </option>
+            ))}
+          </select>
+        </label>
         <div class="flex flex-col gap-1">
           <span
             class="text-sm font-medium invisible select-none pointer-events-none"

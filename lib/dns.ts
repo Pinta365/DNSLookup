@@ -1,23 +1,8 @@
 /**
- * Wrapper around Deno.resolveDns. Normalizes response for the API.
- * @see https://docs.deno.com/api/deno/~/Deno.resolveDns
+ * DNS record types and API response shapes. DoH resolution in lib/doh.ts.
  */
 
-export type RecordType =
-  | "A"
-  | "AAAA"
-  | "ANAME"
-  | "CAA"
-  | "CNAME"
-  | "MX"
-  | "NAPTR"
-  | "NS"
-  | "PTR"
-  | "SOA"
-  | "SRV"
-  | "TXT";
-
-const SUPPORTED_TYPES: RecordType[] = [
+const SUPPORTED_TYPES = [
   "A",
   "AAAA",
   "ANAME",
@@ -30,54 +15,46 @@ const SUPPORTED_TYPES: RecordType[] = [
   "SOA",
   "SRV",
   "TXT",
-];
+] as const;
 
+/** Supported DNS record types for lookup. */
+export type RecordType = (typeof SUPPORTED_TYPES)[number];
+
+/**
+ * Returns true if the string is a supported record type.
+ * @param type - Case-insensitive record type string (e.g. "A", "AAAA").
+ */
 export function isSupportedType(type: string): type is RecordType {
   return SUPPORTED_TYPES.includes(type as RecordType);
 }
 
-export interface LookupOptions {
-  nameServer?: { ipAddr: string; port?: number };
+/** Answer, authority, or additional section: records and their TTLs (same order). */
+export interface DnsSection {
+  records: unknown[];
+  ttls: number[];
 }
 
+/** Successful lookup: answer records plus optional authority/additional sections. */
 export interface LookupSuccess {
   ok: true;
+  host: string;
+  type: RecordType;
   records: unknown[];
+  ttls?: number[];
+  authority?: DnsSection | null;
+  additional?: DnsSection | null;
 }
 
+/** Failed lookup: error message and optional authority/additional (e.g. NXDOMAIN). */
 export interface LookupError {
   ok: false;
+  host: string;
+  type: RecordType;
   error: string;
   code?: string;
+  authority?: DnsSection | null;
+  additional?: DnsSection | null;
 }
 
+/** Result of a DNS lookup (success or error); responses include host and type. */
 export type LookupResult = LookupSuccess | LookupError;
-
-export async function resolveDns(
-  hostname: string,
-  recordType: RecordType,
-  options: LookupOptions = {},
-): Promise<LookupResult> {
-  const resolveOptions: { nameServer?: { ipAddr: string; port: number } } = {};
-  if (options.nameServer?.ipAddr) {
-    resolveOptions.nameServer = {
-      ipAddr: options.nameServer.ipAddr,
-      port: options.nameServer.port ?? 53,
-    };
-  }
-
-  try {
-    const records = await Deno.resolveDns(hostname, recordType, resolveOptions);
-    return {
-      ok: true,
-      records: Array.isArray(records) ? [...records] : [records],
-    };
-  } catch (err) {
-    const message = err instanceof Error ? err.message : String(err);
-    return {
-      ok: false,
-      error: message,
-      code: err instanceof Error ? (err as { code?: string }).code : undefined,
-    };
-  }
-}

@@ -5,8 +5,7 @@ export default define.page(function Home(ctx) {
   const url = ctx.url;
   const host = url.searchParams.get("host") ?? "";
   const type = url.searchParams.get("type") ?? "A";
-  const nameserver = url.searchParams.get("nameserver") ?? "cloudflare";
-  const customNs = url.searchParams.get("customNs") ?? "";
+  const dohProvider = url.searchParams.get("dohProvider") ?? "cloudflare";
 
   return (
     <div class="min-h-screen bg-linear-to-br from-slate-100 to-slate-200">
@@ -20,8 +19,7 @@ export default define.page(function Home(ctx) {
         <DigLookup
           initialHost={host}
           initialType={type}
-          initialNameserver={nameserver}
-          initialCustomNs={customNs}
+          initialDohProvider={dohProvider}
         />
         <footer class="mt-10 pt-6 border-t border-slate-200">
           <h2 class="text-lg font-semibold text-slate-700 mb-3">API</h2>
@@ -47,18 +45,14 @@ export default define.page(function Home(ctx) {
               </dd>
             </div>
             <div>
-              <dt class="font-medium text-slate-700 inline">nameserver</dt>
+              <dt class="font-medium text-slate-700 inline">dohProvider</dt>
               <dd class="inline">
                 — optional, default{" "}
-                <code class="bg-slate-100 px-1 rounded">cloudflare</code>.
-                Resolver: cloudflare, google, quad9, opendns, or custom.
-              </dd>
-            </div>
-            <div>
-              <dt class="font-medium text-slate-700 inline">customNs</dt>
-              <dd class="inline">
-                — required when nameserver=custom. IP of the resolver (e.g.
-                1.1.1.1). Private/local IPs are rejected.
+                <code class="bg-slate-100 px-1 rounded">cloudflare</code>. DoH
+                resolver: cloudflare, google, quad9, mullvad, or controld (RFC
+                8484). Responses include{" "}
+                <code class="bg-slate-100 px-1 rounded">ttls</code> (seconds per
+                record).
               </dd>
             </div>
           </dl>
@@ -72,7 +66,8 @@ export default define.page(function Home(ctx) {
           </pre>
           <p class="text-slate-600 text-sm mb-1">Example:</p>
           <pre class="bg-slate-100 border border-slate-200 rounded p-3 text-xs font-mono text-slate-700 overflow-x-auto">
-{`curl "https://your-domain.com/api/lookup?host=example.com&type=A"`}
+{`curl "https://your-domain.com/api/lookup?host=example.com&type=A"
+curl "https://your-domain.com/api/lookup?host=example.com&type=A&dohProvider=google"`}
           </pre>
         </footer>
       </div>

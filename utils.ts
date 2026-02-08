@@ -1,7 +1,5 @@
 import { createDefine } from "fresh";
 
-export interface State {
-  // Extend when adding middleware that shares state
-}
+export interface State {}
 
 export const define = createDefine<State>();
