@@ -4,15 +4,15 @@
 
 import type { RecordType } from "./dns.ts";
 
-/** DoH resolver provider id; used for GET ?dohProvider= and DOH_PROVIDERS. */
-export type DohProvider =
+/** Resolver provider id; used for GET ?provider= and PROVIDERS list. */
+export type Provider =
   | "cloudflare"
   | "google"
   | "quad9"
   | "mullvad"
   | "controld";
 
-const DOH_ENDPOINTS: Record<DohProvider, string> = {
+const DOH_ENDPOINTS: Record<Provider, string> = {
   cloudflare: "https://cloudflare-dns.com/dns-query",
   google: "https://dns.google/dns-query",
   quad9: "https://dns.quad9.net/dns-query",
@@ -20,8 +20,8 @@ const DOH_ENDPOINTS: Record<DohProvider, string> = {
   controld: "https://freedns.controld.com/p2",
 };
 
-/** Provider list for UI dropdown: id (DohProvider) and display label. */
-export const DOH_PROVIDERS: { id: DohProvider; label: string }[] = [
+/** Provider list for UI dropdown: id and display label. */
+export const PROVIDERS: { id: Provider; label: string }[] = [
   { id: "cloudflare", label: "Cloudflare" },
   { id: "google", label: "Google" },
   { id: "quad9", label: "Quad9" },
@@ -373,7 +373,7 @@ export type DohLookupResult = DohLookupSuccess | DohLookupError;
 export async function dohLookup(
   hostname: string,
   recordType: RecordType,
-  provider: DohProvider = "cloudflare",
+  provider: Provider = "cloudflare",
 ): Promise<DohLookupResult> {
   const endpoint = DOH_ENDPOINTS[provider];
   let queryBytes: Uint8Array;

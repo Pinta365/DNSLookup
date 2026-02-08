@@ -3,18 +3,18 @@ import type { LookupResult } from "../lib/dns.ts";
 import DigForm from "./DigForm.tsx";
 import DigResults from "./DigResults.tsx";
 
-/** Props for the main lookup widget: initial URL params (host, type, dohProvider). */
+/** Props for the main lookup widget: initial URL params (host, type, provider). */
 export interface DigLookupProps {
   initialHost: string;
   initialType: string;
-  initialDohProvider: string;
+  initialProvider: string;
 }
 
 /** Orchestrates form + results; runs initial lookup from URL and doLookup on submit. */
 export default function DigLookup({
   initialHost,
   initialType,
-  initialDohProvider,
+  initialProvider,
 }: DigLookupProps) {
   const result = useSignal<LookupResult | null>(null);
   const loading = useSignal(false);
@@ -26,7 +26,7 @@ export default function DigLookup({
   async function doLookup(params: {
     host: string;
     type: string;
-    dohProvider: string;
+    provider: string;
   }) {
     loading.value = true;
     result.value = null;
@@ -38,7 +38,7 @@ export default function DigLookup({
       const url = new URL("/api/lookup", globalThis.location.origin);
       url.searchParams.set("host", params.host);
       url.searchParams.set("type", params.type);
-      url.searchParams.set("dohProvider", params.dohProvider);
+      url.searchParams.set("provider", params.provider);
       const res = await fetch(url.toString());
       const data = (await res.json()) as LookupResult;
       result.value = data;
@@ -63,7 +63,7 @@ export default function DigLookup({
     doLookup({
       host: initialHost,
       type: initialType,
-      dohProvider: initialDohProvider,
+      provider: initialProvider,
     });
   });
 
@@ -72,7 +72,7 @@ export default function DigLookup({
       <DigForm
         initialHost={initialHost}
         initialType={initialType}
-        initialDohProvider={initialDohProvider}
+        initialProvider={initialProvider}
         onLookup={doLookup}
         loading={loading.value}
       />

@@ -1,6 +1,6 @@
 import { define } from "../../utils.ts";
 import { isSupportedType, type RecordType } from "../../lib/dns.ts";
-import { dohLookup, type DohProvider } from "../../lib/doh.ts";
+import { dohLookup, type Provider } from "../../lib/doh.ts";
 
 const CORS_HEADERS = {
   "Access-Control-Allow-Origin": "*",
@@ -25,7 +25,7 @@ function isValidHostname(host: string): boolean {
   return labels.every((l) => validLabel.test(l) || l === "*");
 }
 
-const VALID_DOH: DohProvider[] = [
+const VALID_PROVIDERS: Provider[] = [
   "cloudflare",
   "google",
   "quad9",
@@ -34,7 +34,7 @@ const VALID_DOH: DohProvider[] = [
 ];
 
 /**
- * GET /api/lookup?host=&type=&dohProvider=
+ * GET /api/lookup?host=&type=&provider=
  * Returns JSON: { ok, host, type, records?, ttls?, authority?, additional? } or { ok: false, error }.
  */
 export const handler = define.handlers({
@@ -42,12 +42,11 @@ export const handler = define.handlers({
     const url = new URL(ctx.req.url);
     const host = url.searchParams.get("host") ?? "";
     const type = (url.searchParams.get("type") ?? "A").toUpperCase();
-    const dohProviderParam = url.searchParams.get("dohProvider") ??
-      "cloudflare";
-    const dohProvider: DohProvider = VALID_DOH.includes(
-        dohProviderParam as DohProvider,
+    const providerParam = url.searchParams.get("provider") ?? "cloudflare";
+    const provider: Provider = VALID_PROVIDERS.includes(
+        providerParam as Provider,
       )
-      ? (dohProviderParam as DohProvider)
+      ? (providerParam as Provider)
       : "cloudflare";
 
     if (!host.trim()) {
@@ -64,7 +63,7 @@ export const handler = define.handlers({
     const result = await dohLookup(
       trimmedHost,
       type as RecordType,
-      dohProvider,
+      provider,
     );
     return jsonResponse({
       ...result,

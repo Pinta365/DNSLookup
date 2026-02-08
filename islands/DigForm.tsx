@@ -1,5 +1,5 @@
 import { useSignal } from "@preact/signals";
-import { DOH_PROVIDERS } from "../lib/doh.ts";
+import { PROVIDERS } from "../lib/doh.ts";
 
 const RECORD_TYPES = [
   "A",
@@ -31,15 +31,15 @@ const RECORD_TYPE_HINT: Record<string, string> = {
   TXT: "Text record",
 };
 
-/** Props for the lookup form (host, type, DoH provider, submit callback). */
+/** Props for the lookup form (host, type, provider, submit callback). */
 export interface DigFormProps {
   initialHost: string;
   initialType: string;
-  initialDohProvider: string;
+  initialProvider: string;
   onLookup: (params: {
     host: string;
     type: string;
-    dohProvider: string;
+    provider: string;
   }) => void;
   loading?: boolean;
 }
@@ -48,20 +48,20 @@ export interface DigFormProps {
 export default function DigForm({
   initialHost,
   initialType,
-  initialDohProvider,
+  initialProvider,
   onLookup,
   loading = false,
 }: DigFormProps) {
   const host = useSignal(initialHost);
   const type = useSignal(initialType);
-  const dohProvider = useSignal(initialDohProvider);
+  const provider = useSignal(initialProvider);
 
   function syncUrl() {
     const params = new URLSearchParams();
     if (host.value) params.set("host", host.value);
     if (type.value && type.value !== "A") params.set("type", type.value);
-    if (dohProvider.value !== "cloudflare") {
-      params.set("dohProvider", dohProvider.value);
+    if (provider.value !== "cloudflare") {
+      params.set("provider", provider.value);
     }
     const qs = params.toString();
     const url = qs
@@ -76,7 +76,7 @@ export default function DigForm({
     onLookup({
       host: host.value,
       type: type.value,
-      dohProvider: dohProvider.value,
+      provider: provider.value,
     });
   }
 
@@ -127,16 +127,16 @@ export default function DigForm({
         </label>
         <label class="flex flex-col gap-1 min-w-0">
           <span class="text-sm font-medium text-slate-700">
-            Resolver (DoH)
+            Resolver
           </span>
           <select
-            value={dohProvider.value}
+            value={provider.value}
             onChange={(
               e,
-            ) => (dohProvider.value = (e.target as HTMLSelectElement).value)}
+            ) => (provider.value = (e.target as HTMLSelectElement).value)}
             class={`${inputBase} min-w-56`}
           >
-            {DOH_PROVIDERS.map((p) => (
+            {PROVIDERS.map((p) => (
               <option key={p.id} value={p.id}>
                 {p.label}
               </option>
