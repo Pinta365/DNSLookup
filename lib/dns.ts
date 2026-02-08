@@ -52,6 +52,10 @@ export interface LookupError {
   type: RecordType;
   error: string;
   code?: string;
+  /** Seconds until rate limit resets (for rate_limit_exceeded). */
+  retry_after?: number;
+  /** Unix timestamp when rate limit resets (for rate_limit_exceeded). */
+  reset_at?: number;
   authority?: DnsSection | null;
   additional?: DnsSection | null;
 }

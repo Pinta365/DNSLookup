@@ -76,6 +76,10 @@ export default function DigResults({
         host: result.host,
         type: result.type,
         error: result.error,
+        ...(result.retry_after != null
+          ? { retry_after: result.retry_after }
+          : {}),
+        ...(result.reset_at != null ? { reset_at: result.reset_at } : {}),
         ...(result.authority != null ? { authority: result.authority } : {}),
         ...(result.additional != null ? { additional: result.additional } : {}),
       };
@@ -97,6 +101,10 @@ export default function DigResults({
       host: result.host,
       type: result.type,
       error: result.error,
+      ...(result.retry_after != null
+        ? { retry_after: result.retry_after }
+        : {}),
+      ...(result.reset_at != null ? { reset_at: result.reset_at } : {}),
       ...(result.authority != null ? { authority: result.authority } : {}),
       ...(result.additional != null ? { additional: result.additional } : {}),
     };
@@ -105,7 +113,11 @@ export default function DigResults({
       <div class="rounded-lg border border-red-200 bg-red-50/80 overflow-hidden">
         <div class="px-4 py-2 bg-red-100/80 border-b border-red-200 flex flex-wrap justify-between items-center gap-2">
           <span class="text-sm font-medium text-red-800">
-            Lookup failed for {result.host} ({result.type})
+            {result.error === "rate_limit_exceeded"
+              ? "Rate limit exceeded"
+              : result.host
+              ? `Lookup failed for ${result.host} (${result.type})`
+              : "Lookup failed"}
             {durationMs != null && (
               <span class="ml-2 font-normal text-red-600/80">
                 · Failed after {durationMs} ms
@@ -140,6 +152,20 @@ export default function DigResults({
               <>
                 <p class="font-medium text-red-800">Lookup failed</p>
                 <p class="text-sm mt-1 text-red-700">{result.error}</p>
+                {result.error === "rate_limit_exceeded" &&
+                  (result.retry_after != null || result.reset_at != null) && (
+                  <p class="text-sm mt-2 text-red-600/90">
+                    {result.retry_after != null
+                      ? `Try again in ${result.retry_after} second${
+                        result.retry_after === 1 ? "" : "s"
+                      }.`
+                      : result.reset_at != null
+                      ? `Limit resets at ${
+                        new Date(result.reset_at * 1000).toLocaleTimeString()
+                      }.`
+                      : null}
+                  </p>
+                )}
                 {errHasExtra && (
                   <label class="flex items-center gap-2 cursor-pointer mt-3">
                     <input

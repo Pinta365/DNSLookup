@@ -119,6 +119,26 @@ export default define.page(function ApiDocs() {
         </section>
 
         <section class="mb-8">
+          <h2 class="text-xl font-semibold text-slate-700 mb-3">
+            Rate limiting
+          </h2>
+          <p class="text-slate-600 text-sm mb-2">
+            Limits are applied per client (by IP or <code>X-Forwarded-For</code>
+            / <code>X-Real-IP</code>{" "}
+            when behind a proxy). Default: 60 requests per minute. When
+            exceeded, the API returns 429 with{" "}
+            <code>{'{ "ok": false, "error": "rate_limit_exceeded" }'}</code>
+            {" "}
+            and a <code>Retry-After</code> header (seconds).
+          </p>
+          <p class="text-slate-600 text-sm">
+            Successful responses include <code>X-RateLimit-Limit</code>,{" "}
+            <code>X-RateLimit-Remaining</code>, and{" "}
+            <code>X-RateLimit-Reset</code> (Unix timestamp).
+          </p>
+        </section>
+
+        <section class="mb-8">
           <h2 class="text-xl font-semibold text-slate-700 mb-3">Examples</h2>
           <pre class="bg-slate-900 text-slate-100 rounded p-4 text-xs font-mono overflow-x-auto">
 {`# Basic A record

@@ -1,17 +1,22 @@
 import { define } from "../../utils.ts";
 import { isSupportedType, type RecordType } from "../../lib/dns.ts";
 import { dohLookup, type Provider } from "../../lib/doh.ts";
+import { defaultLimiter, getClientKey } from "../../lib/rateLimit.ts";
 
 const CORS_HEADERS = {
   "Access-Control-Allow-Origin": "*",
   "Content-Type": "application/json",
 };
 
-/** JSON response with CORS and optional status. */
-function jsonResponse(data: unknown, status = 200) {
+/** JSON response with CORS, optional status and extra headers. */
+function jsonResponse(
+  data: unknown,
+  status = 200,
+  extraHeaders: Record<string, string> = {},
+) {
   return new Response(JSON.stringify(data), {
     status,
-    headers: CORS_HEADERS,
+    headers: { ...CORS_HEADERS, ...extraHeaders },
   });
 }
 
@@ -39,6 +44,33 @@ const VALID_PROVIDERS: Provider[] = [
  */
 export const handler = define.handlers({
   async GET(ctx) {
+    const key = getClientKey(
+      ctx.req,
+      (ctx as { remoteAddr?: unknown }).remoteAddr,
+    );
+    const rate = defaultLimiter.check(key);
+    const rateLimitHeaders = {
+      "X-RateLimit-Limit": String(rate.limit),
+      "X-RateLimit-Remaining": String(rate.remaining),
+      "X-RateLimit-Reset": String(Math.ceil(rate.resetAt / 1000)),
+    };
+    if (!rate.allowed) {
+      const retryAfter = Math.ceil((rate.resetAt - Date.now()) / 1000);
+      const resetAt = Math.ceil(rate.resetAt / 1000);
+      return jsonResponse(
+        {
+          ok: false,
+          host: "",
+          type: "A",
+          error: "rate_limit_exceeded",
+          retry_after: retryAfter,
+          reset_at: resetAt,
+        },
+        429,
+        { ...rateLimitHeaders, "Retry-After": String(retryAfter) },
+      );
+    }
+
     const url = new URL(ctx.req.url);
     const host = url.searchParams.get("host") ?? "";
     const type = (url.searchParams.get("type") ?? "A").toUpperCase();
@@ -50,13 +82,25 @@ export const handler = define.handlers({
       : "cloudflare";
 
     if (!host.trim()) {
-      return jsonResponse({ ok: false, error: "Missing or invalid host" }, 400);
+      return jsonResponse(
+        { ok: false, error: "Missing or invalid host" },
+        400,
+        rateLimitHeaders,
+      );
     }
     if (!isValidHostname(host.trim())) {
-      return jsonResponse({ ok: false, error: "invalid_host" }, 400);
+      return jsonResponse(
+        { ok: false, error: "invalid_host" },
+        400,
+        rateLimitHeaders,
+      );
     }
     if (!isSupportedType(type)) {
-      return jsonResponse({ ok: false, error: "invalid_type" }, 400);
+      return jsonResponse(
+        { ok: false, error: "invalid_type" },
+        400,
+        rateLimitHeaders,
+      );
     }
 
     const trimmedHost = host.trim();
@@ -65,10 +109,14 @@ export const handler = define.handlers({
       type as RecordType,
       provider,
     );
-    return jsonResponse({
-      ...result,
-      host: trimmedHost,
-      type: type as RecordType,
-    });
+    return jsonResponse(
+      {
+        ...result,
+        host: trimmedHost,
+        type: type as RecordType,
+      },
+      200,
+      rateLimitHeaders,
+    );
   },
 });
