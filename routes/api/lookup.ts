@@ -1,7 +1,11 @@
 import { define } from "../../utils.ts";
 import { isSupportedType, type RecordType } from "../../lib/dns.ts";
 import { dohLookup, type Provider } from "../../lib/doh.ts";
+import { dotLookup, isDotSupported } from "../../lib/dot.ts";
 import { defaultLimiter, getClientKey } from "../../lib/rateLimit.ts";
+
+const VALID_TRANSPORTS = ["doh", "dot"] as const;
+type Transport = (typeof VALID_TRANSPORTS)[number];
 
 const CORS_HEADERS = {
   "Access-Control-Allow-Origin": "*",
@@ -39,8 +43,9 @@ const VALID_PROVIDERS: Provider[] = [
 ];
 
 /**
- * GET /api/lookup?host=&type=&provider=
+ * GET /api/lookup?host=&type=&provider=&transport=
  * Returns JSON: { ok, host, type, records?, ttls?, authority?, additional? } or { ok: false, error }.
+ * transport: "doh" (default) or "dot"; DoT not available for all providers.
  */
 export const handler = define.handlers({
   async GET(ctx) {
@@ -80,6 +85,15 @@ export const handler = define.handlers({
       )
       ? (providerParam as Provider)
       : "cloudflare";
+    const transportParam = url.searchParams.get("transport") ?? "doh";
+    if (!VALID_TRANSPORTS.includes(transportParam as Transport)) {
+      return jsonResponse(
+        { ok: false, error: "invalid_transport" },
+        400,
+        rateLimitHeaders,
+      );
+    }
+    const transport = transportParam as Transport;
 
     if (!host.trim()) {
       return jsonResponse(
@@ -102,13 +116,18 @@ export const handler = define.handlers({
         rateLimitHeaders,
       );
     }
+    if (transport === "dot" && !isDotSupported(provider)) {
+      return jsonResponse(
+        { ok: false, error: "DoT not available for this provider" },
+        400,
+        rateLimitHeaders,
+      );
+    }
 
     const trimmedHost = host.trim();
-    const result = await dohLookup(
-      trimmedHost,
-      type as RecordType,
-      provider,
-    );
+    const result = transport === "dot"
+      ? await dotLookup(trimmedHost, type as RecordType, provider)
+      : await dohLookup(trimmedHost, type as RecordType, provider);
     return jsonResponse(
       {
         ...result,

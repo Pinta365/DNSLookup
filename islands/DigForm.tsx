@@ -1,5 +1,7 @@
 import { useSignal } from "@preact/signals";
 import { PROVIDERS } from "../lib/doh.ts";
+import { isDotSupported } from "../lib/dot.ts";
+import type { Provider } from "../lib/doh.ts";
 
 const RECORD_TYPES = [
   "A",
@@ -31,30 +33,43 @@ const RECORD_TYPE_HINT: Record<string, string> = {
   TXT: "Text record",
 };
 
-/** Props for the lookup form (host, type, provider, submit callback). */
+const TRANSPORTS = [
+  { id: "doh", label: "DoH" },
+  { id: "dot", label: "DoT" },
+] as const;
+
+/** Props for the lookup form (host, type, provider, transport, submit callback). */
 export interface DigFormProps {
   initialHost: string;
   initialType: string;
   initialProvider: string;
+  initialTransport: string;
   onLookup: (params: {
     host: string;
     type: string;
     provider: string;
+    transport: string;
   }) => void;
+  onStartOver?: () => void;
   loading?: boolean;
 }
 
-/** Form: hostname, record type, DoH provider; submits to onLookup and syncs URL. */
+/** Form: hostname, record type, provider, transport; submits to onLookup and syncs URL. */
 export default function DigForm({
   initialHost,
   initialType,
   initialProvider,
+  initialTransport,
   onLookup,
+  onStartOver,
   loading = false,
 }: DigFormProps) {
   const host = useSignal(initialHost);
   const type = useSignal(initialType);
   const provider = useSignal(initialProvider);
+  const transport = useSignal(
+    initialTransport === "dot" ? "dot" : "doh",
+  );
 
   function syncUrl() {
     const params = new URLSearchParams();
@@ -63,11 +78,27 @@ export default function DigForm({
     if (provider.value !== "cloudflare") {
       params.set("provider", provider.value);
     }
+    if (transport.value !== "doh") {
+      params.set("transport", transport.value);
+    }
     const qs = params.toString();
     const url = qs
       ? `${globalThis.location.pathname}?${qs}`
       : globalThis.location.pathname;
     globalThis.history.replaceState({}, "", url);
+  }
+
+  const dotUnavailable = transport.value === "dot" &&
+    !isDotSupported(provider.value as Provider);
+
+  function handleStartOver(e: Event) {
+    e.preventDefault();
+    host.value = "";
+    type.value = "A";
+    provider.value = "cloudflare";
+    transport.value = "doh";
+    globalThis.history.replaceState({}, "", globalThis.location.pathname);
+    onStartOver?.();
   }
 
   function handleSubmit(e: Event) {
@@ -77,6 +108,7 @@ export default function DigForm({
       host: host.value,
       type: type.value,
       provider: provider.value,
+      transport: transport.value,
     });
   }
 
@@ -127,6 +159,24 @@ export default function DigForm({
         </label>
         <label class="flex flex-col gap-1 min-w-0">
           <span class="text-sm font-medium text-slate-700">
+            Transport
+          </span>
+          <select
+            value={transport.value}
+            onChange={(
+              e,
+            ) => (transport.value = (e.target as HTMLSelectElement).value)}
+            class={inputBase}
+          >
+            {TRANSPORTS.map((t) => (
+              <option key={t.id} value={t.id}>
+                {t.label}
+              </option>
+            ))}
+          </select>
+        </label>
+        <label class="flex flex-col gap-1 min-w-0">
+          <span class="text-sm font-medium text-slate-700">
             Resolver
           </span>
           <select
@@ -142,6 +192,11 @@ export default function DigForm({
               </option>
             ))}
           </select>
+          {dotUnavailable && (
+            <span class="text-xs text-amber-600">
+              DoT not available for this provider
+            </span>
+          )}
         </label>
         <div class="flex flex-col gap-1">
           <span
@@ -150,10 +205,17 @@ export default function DigForm({
           >
             Resolver
           </span>
-          <div class="flex justify-end sm:justify-start lg:justify-end">
+          <div class="flex justify-between items-center gap-3">
+            <button
+              type="button"
+              onClick={handleStartOver}
+              class="px-4 py-2 rounded-md border border-emerald-300 text-emerald-700 font-medium bg-emerald-50/80 hover:bg-emerald-100 focus:ring-2 focus:ring-emerald-500 focus:ring-offset-2 transition-colors"
+            >
+              Start over
+            </button>
             <button
               type="submit"
-              disabled={loading}
+              disabled={loading || dotUnavailable}
               class="px-4 py-2 rounded-md bg-emerald-600 text-white font-medium hover:bg-emerald-700 focus:ring-2 focus:ring-emerald-500 focus:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
             >
               {loading ? "Looking up…" : "Look up"}

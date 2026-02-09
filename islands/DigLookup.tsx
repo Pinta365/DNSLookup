@@ -3,11 +3,12 @@ import type { LookupResult } from "../lib/dns.ts";
 import DigForm from "./DigForm.tsx";
 import DigResults from "./DigResults.tsx";
 
-/** Props for the main lookup widget: initial URL params (host, type, provider). */
+/** Props for the main lookup widget: initial URL params (host, type, provider, transport). */
 export interface DigLookupProps {
   initialHost: string;
   initialType: string;
   initialProvider: string;
+  initialTransport: string;
 }
 
 /** Orchestrates form + results; runs initial lookup from URL and doLookup on submit. */
@@ -15,6 +16,7 @@ export default function DigLookup({
   initialHost,
   initialType,
   initialProvider,
+  initialTransport,
 }: DigLookupProps) {
   const result = useSignal<LookupResult | null>(null);
   const loading = useSignal(false);
@@ -27,6 +29,7 @@ export default function DigLookup({
     host: string;
     type: string;
     provider: string;
+    transport: string;
   }) {
     loading.value = true;
     result.value = null;
@@ -39,6 +42,9 @@ export default function DigLookup({
       url.searchParams.set("host", params.host);
       url.searchParams.set("type", params.type);
       url.searchParams.set("provider", params.provider);
+      if (params.transport !== "doh") {
+        url.searchParams.set("transport", params.transport);
+      }
       const res = await fetch(url.toString());
       const data = (await res.json()) as LookupResult;
       result.value = data;
@@ -64,6 +70,7 @@ export default function DigLookup({
       host: initialHost,
       type: initialType,
       provider: initialProvider,
+      transport: initialTransport,
     });
   });
 
@@ -73,15 +80,42 @@ export default function DigLookup({
         initialHost={initialHost}
         initialType={initialType}
         initialProvider={initialProvider}
+        initialTransport={initialTransport}
         onLookup={doLookup}
+        onStartOver={() => (result.value = null)}
         loading={loading.value}
       />
-      <DigResults
-        result={result.value}
-        host={lastHost.value}
-        type={lastType.value}
-        durationMs={durationMs.value}
-      />
+      {result.value === null
+        ? (
+          <div class="rounded-lg border border-slate-200 bg-white/80 shadow-sm p-4 text-sm text-slate-600">
+            <p class="font-medium text-slate-700 mb-2">How it works</p>
+            <ul class="list-disc list-inside space-y-1">
+              <li>
+                <strong>Hostname</strong>{" "}
+                — the domain to look up (e.g. example.com).
+              </li>
+              <li>
+                <strong>Record type</strong> — A, AAAA, MX, NS, TXT, etc.
+              </li>
+              <li>
+                <strong>Transport</strong>{" "}
+                — DoH (HTTPS) or DoT (TLS on port 853).
+              </li>
+              <li>
+                <strong>Resolver</strong>{" "}
+                — which provider runs the lookup (Cloudflare, Google, Quad9, …).
+              </li>
+            </ul>
+          </div>
+        )
+        : (
+          <DigResults
+            result={result.value}
+            host={lastHost.value}
+            type={lastType.value}
+            durationMs={durationMs.value}
+          />
+        )}
     </div>
   );
 }

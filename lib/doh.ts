@@ -44,7 +44,8 @@ const RECORD_TYPE_TO_NUM: Record<string, number> = {
   ANAME: 65422,
 };
 
-const RCODE_NAMES: Record<number, string> = {
+/** RCODE to human-readable string; shared with DoT for error mapping. */
+export const RCODE_NAMES: Record<number, string> = {
   0: "No error",
   1: "Format error",
   2: "Server failure",
@@ -70,8 +71,11 @@ function encodeQName(hostname: string): Uint8Array {
   return new Uint8Array(parts);
 }
 
-/** Build a DNS query message: 12-byte header + question (QNAME, QTYPE, QCLASS IN). */
-function encodeQuery(hostname: string, recordType: RecordType): Uint8Array {
+/** Build a DNS query message: 12-byte header + question (QNAME, QTYPE, QCLASS IN). Shared with DoT. */
+export function encodeQuery(
+  hostname: string,
+  recordType: RecordType,
+): Uint8Array {
   const qname = encodeQName(hostname);
   const typeNum = getTypeNum(recordType);
   const headerLen = 12;
@@ -269,9 +273,9 @@ export interface DnsSection {
 }
 
 /**
- * Parse a DNS response buffer into rcode, answer records, and authority/additional.
+ * Parse a DNS response buffer into rcode, answer records, and authority/additional. Shared with DoT.
  */
-function decodeResponse(buf: Uint8Array): {
+export function decodeResponse(buf: Uint8Array): {
   rcode: number;
   records: string[];
   ttls: number[];

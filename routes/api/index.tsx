@@ -71,7 +71,21 @@ export default define.page(function ApiDocs() {
               <dd>
                 Resolver: <code>cloudflare</code>, <code>google</code>,{" "}
                 <code>quad9</code>, <code>mullvad</code>, or{" "}
-                <code>controld</code>. Resolution uses RFC 8484 DoH wire format.
+                <code>controld</code>. Resolution uses RFC 8484 DoH or DoT wire
+                format depending on <code>transport</code>.
+              </dd>
+            </div>
+            <div class="flex flex-col gap-1">
+              <dt class="font-medium text-slate-700">
+                <code class="bg-slate-100 px-1 rounded">transport</code>
+                <span class="font-normal text-slate-500 ml-2">
+                  optional, default <code>doh</code>
+                </span>
+              </dt>
+              <dd>
+                <code>doh</code> (DNS over HTTPS) or <code>dot</code>{" "}
+                (DNS over TLS). DoT is only available for cloudflare, google,
+                and quad9.
               </dd>
             </div>
           </dl>
@@ -144,8 +158,9 @@ export default define.page(function ApiDocs() {
 {`# Basic A record
 curl "https://your-domain.com/api/lookup?host=example.com&type=A"
 
-# With DoH provider
+# With provider and transport
 curl "https://your-domain.com/api/lookup?host=example.com&type=A&provider=google"
+curl "https://your-domain.com/api/lookup?host=example.com&type=A&provider=cloudflare&transport=dot"
 
 # MX records
 curl "https://your-domain.com/api/lookup?host=example.com&type=MX"`}
