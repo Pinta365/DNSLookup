@@ -38,28 +38,31 @@ const TRANSPORTS = [
   { id: "dot", label: "DoT" },
 ] as const;
 
-/** Props for the lookup form (host, type, provider, transport, submit callback). */
+/** Props for the lookup form (host, type, provider, transport, mode, submit callback). */
 export interface DigFormProps {
   initialHost: string;
   initialType: string;
   initialProvider: string;
   initialTransport: string;
+  initialMode?: string;
   onLookup: (params: {
     host: string;
     type: string;
     provider: string;
     transport: string;
+    mode: string;
   }) => void;
   onStartOver?: () => void;
   loading?: boolean;
 }
 
-/** Form: hostname, record type, provider, transport; submits to onLookup and syncs URL. */
+/** Form: hostname, record type, provider, transport, mode toggle; submits to onLookup and syncs URL. */
 export default function DigForm({
   initialHost,
   initialType,
   initialProvider,
   initialTransport,
+  initialMode = "single",
   onLookup,
   onStartOver,
   loading = false,
@@ -70,13 +73,18 @@ export default function DigForm({
   const transport = useSignal(
     initialTransport === "dot" ? "dot" : "doh",
   );
+  const mode = useSignal(initialMode === "compare" ? "compare" : "single");
 
   function syncUrl() {
     const params = new URLSearchParams();
     if (host.value) params.set("host", host.value);
     if (type.value && type.value !== "A") params.set("type", type.value);
-    if (provider.value !== "cloudflare") {
-      params.set("provider", provider.value);
+    if (mode.value === "compare") {
+      params.set("mode", "compare");
+    } else {
+      if (provider.value !== "cloudflare") {
+        params.set("provider", provider.value);
+      }
     }
     if (transport.value !== "doh") {
       params.set("transport", transport.value);
@@ -89,6 +97,7 @@ export default function DigForm({
   }
 
   const dotUnavailable = transport.value === "dot" &&
+    mode.value === "single" &&
     !isDotSupported(provider.value as Provider);
 
   function handleStartOver(e: Event) {
@@ -97,6 +106,7 @@ export default function DigForm({
     type.value = "A";
     provider.value = "cloudflare";
     transport.value = "doh";
+    mode.value = "single";
     globalThis.history.replaceState({}, "", globalThis.location.pathname);
     onStartOver?.();
   }
@@ -109,6 +119,7 @@ export default function DigForm({
       type: type.value,
       provider: provider.value,
       transport: transport.value,
+      mode: mode.value,
     });
   }
 
@@ -120,6 +131,31 @@ export default function DigForm({
       onSubmit={handleSubmit}
       class="flex flex-col gap-4 p-4 rounded-lg bg-white/80 shadow-sm border border-slate-200"
     >
+      <div class="flex items-center gap-2">
+        <span class="text-sm font-medium text-slate-600 mr-1">Mode:</span>
+        <button
+          type="button"
+          onClick={() => { mode.value = "single"; syncUrl(); }}
+          class={`px-3 py-1 text-sm rounded-md font-medium transition-colors ${
+            mode.value === "single"
+              ? "bg-emerald-600 text-white"
+              : "bg-slate-100 text-slate-600 hover:bg-slate-200"
+          }`}
+        >
+          Single resolver
+        </button>
+        <button
+          type="button"
+          onClick={() => { mode.value = "compare"; syncUrl(); }}
+          class={`px-3 py-1 text-sm rounded-md font-medium transition-colors ${
+            mode.value === "compare"
+              ? "bg-emerald-600 text-white"
+              : "bg-slate-100 text-slate-600 hover:bg-slate-200"
+          }`}
+        >
+          Compare all resolvers
+        </button>
+      </div>
       <label class="flex flex-col gap-1">
         <span class="text-sm font-medium text-slate-700">Hostname</span>
         <input
@@ -174,30 +210,37 @@ export default function DigForm({
               </option>
             ))}
           </select>
-        </label>
-        <label class="flex flex-col gap-1 min-w-0">
-          <span class="text-sm font-medium text-slate-700">
-            Resolver
-          </span>
-          <select
-            value={provider.value}
-            onChange={(
-              e,
-            ) => (provider.value = (e.target as HTMLSelectElement).value)}
-            class={`${inputBase} min-w-56`}
-          >
-            {PROVIDERS.map((p) => (
-              <option key={p.id} value={p.id}>
-                {p.label}
-              </option>
-            ))}
-          </select>
-          {dotUnavailable && (
+          {mode.value === "compare" && transport.value === "dot" && (
             <span class="text-xs text-amber-600">
-              DoT not available for this provider
+              DoT not available for Mullvad &amp; Control D
             </span>
           )}
         </label>
+        {mode.value === "single" && (
+          <label class="flex flex-col gap-1 min-w-0">
+            <span class="text-sm font-medium text-slate-700">
+              Resolver
+            </span>
+            <select
+              value={provider.value}
+              onChange={(
+                e,
+              ) => (provider.value = (e.target as HTMLSelectElement).value)}
+              class={`${inputBase} min-w-56`}
+            >
+              {PROVIDERS.map((p) => (
+                <option key={p.id} value={p.id}>
+                  {p.label}
+                </option>
+              ))}
+            </select>
+            {dotUnavailable && (
+              <span class="text-xs text-amber-600">
+                DoT not available for this provider
+              </span>
+            )}
+          </label>
+        )}
         <div class="flex flex-col gap-1">
           <span
             class="text-sm font-medium invisible select-none pointer-events-none"
@@ -218,7 +261,7 @@ export default function DigForm({
               disabled={loading || dotUnavailable}
               class="px-4 py-2 rounded-md bg-emerald-600 text-white font-medium hover:bg-emerald-700 focus:ring-2 focus:ring-emerald-500 focus:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
             >
-              {loading ? "Looking up…" : "Look up"}
+              {loading ? "Looking up…" : mode.value === "compare" ? "Compare" : "Look up"}
             </button>
           </div>
         </div>

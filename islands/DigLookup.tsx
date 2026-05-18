@@ -1,14 +1,17 @@
 import { useSignal, useSignalEffect } from "@preact/signals";
 import type { LookupResult } from "../lib/dns.ts";
+import type { CompareResponse } from "../lib/compare.ts";
 import DigForm from "./DigForm.tsx";
 import DigResults from "./DigResults.tsx";
+import DigCompare from "./DigCompare.tsx";
 
-/** Props for the main lookup widget: initial URL params (host, type, provider, transport). */
+/** Props for the main lookup widget: initial URL params (host, type, provider, transport, mode). */
 export interface DigLookupProps {
   initialHost: string;
   initialType: string;
   initialProvider: string;
   initialTransport: string;
+  initialMode?: string;
 }
 
 /** Orchestrates form + results; runs initial lookup from URL and doLookup on submit. */
@@ -17,42 +20,60 @@ export default function DigLookup({
   initialType,
   initialProvider,
   initialTransport,
+  initialMode = "single",
 }: DigLookupProps) {
   const result = useSignal<LookupResult | null>(null);
+  const compareResult = useSignal<CompareResponse | null>(null);
   const loading = useSignal(false);
   const lastHost = useSignal(initialHost);
   const lastType = useSignal(initialType);
   const durationMs = useSignal<number | null>(null);
   const didInitialLookup = useSignal(false);
+  const mode = useSignal(initialMode === "compare" ? "compare" : "single");
 
   async function doLookup(params: {
     host: string;
     type: string;
     provider: string;
     transport: string;
+    mode: string;
   }) {
     loading.value = true;
     result.value = null;
+    compareResult.value = null;
     durationMs.value = null;
     lastHost.value = params.host;
     lastType.value = params.type;
+    mode.value = params.mode === "compare" ? "compare" : "single";
     const start = performance.now();
     try {
-      const url = new URL("/api/lookup", globalThis.location.origin);
-      url.searchParams.set("host", params.host);
-      url.searchParams.set("type", params.type);
-      url.searchParams.set("provider", params.provider);
-      if (params.transport !== "doh") {
-        url.searchParams.set("transport", params.transport);
+      if (params.mode === "compare") {
+        const url = new URL("/api/compare", globalThis.location.origin);
+        url.searchParams.set("host", params.host);
+        url.searchParams.set("type", params.type);
+        if (params.transport !== "doh") {
+          url.searchParams.set("transport", params.transport);
+        }
+        const res = await fetch(url.toString());
+        const data = (await res.json()) as CompareResponse;
+        compareResult.value = data;
+      } else {
+        const url = new URL("/api/lookup", globalThis.location.origin);
+        url.searchParams.set("host", params.host);
+        url.searchParams.set("type", params.type);
+        url.searchParams.set("provider", params.provider);
+        if (params.transport !== "doh") {
+          url.searchParams.set("transport", params.transport);
+        }
+        const res = await fetch(url.toString());
+        const data = (await res.json()) as LookupResult;
+        result.value = data;
       }
-      const res = await fetch(url.toString());
-      const data = (await res.json()) as LookupResult;
-      result.value = data;
     } catch (err) {
       result.value = {
         ok: false,
         host: params.host,
-        type: params.type,
+        type: params.type as import("../lib/dns.ts").RecordType,
         error: err instanceof Error ? err.message : "Network error",
       };
     } finally {
@@ -71,8 +92,13 @@ export default function DigLookup({
       type: initialType,
       provider: initialProvider,
       transport: initialTransport,
+      mode: initialMode,
     });
   });
+
+  const hasResult = mode.value === "compare"
+    ? compareResult.value !== null
+    : result.value !== null;
 
   return (
     <div class="flex flex-col gap-6">
@@ -81,11 +107,16 @@ export default function DigLookup({
         initialType={initialType}
         initialProvider={initialProvider}
         initialTransport={initialTransport}
+        initialMode={initialMode}
         onLookup={doLookup}
-        onStartOver={() => (result.value = null)}
+        onStartOver={() => {
+          result.value = null;
+          compareResult.value = null;
+          mode.value = "single";
+        }}
         loading={loading.value}
       />
-      {result.value === null
+      {!hasResult && !loading.value
         ? (
           <div class="rounded-lg border border-slate-200 bg-white/80 shadow-sm p-4 text-sm text-slate-600">
             <p class="font-medium text-slate-700 mb-2">How it works</p>
@@ -105,8 +136,19 @@ export default function DigLookup({
                 <strong>Resolver</strong>{" "}
                 — which provider runs the lookup (Cloudflare, Google, Quad9, …).
               </li>
+              <li>
+                <strong>Compare all resolvers</strong>{" "}
+                — query all 5 providers at once to check propagation.
+              </li>
             </ul>
           </div>
+        )
+        : mode.value === "compare"
+        ? (
+          <DigCompare
+            response={compareResult.value}
+            loading={loading.value}
+          />
         )
         : (
           <DigResults

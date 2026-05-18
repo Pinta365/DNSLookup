@@ -7,6 +7,7 @@ export default define.page(function Home(ctx) {
   const type = url.searchParams.get("type") ?? "A";
   const provider = url.searchParams.get("provider") ?? "cloudflare";
   const transport = url.searchParams.get("transport") ?? "doh";
+  const mode = url.searchParams.get("mode") ?? "single";
 
   return (
     <div class="min-h-screen bg-linear-to-br from-slate-100 to-slate-200">
@@ -23,6 +24,7 @@ export default define.page(function Home(ctx) {
           initialType={type}
           initialProvider={provider}
           initialTransport={transport}
+          initialMode={mode}
         />
         <footer class="mt-10 pt-6 border-t border-slate-200 text-center">
           <a

@@ -134,10 +134,77 @@ export default define.page(function ApiDocs() {
 
         <section class="mb-8">
           <h2 class="text-xl font-semibold text-slate-700 mb-3">
+            Compare endpoint
+          </h2>
+          <p class="text-slate-600 text-sm mb-2">
+            <code class="bg-slate-200 px-1.5 py-0.5 rounded font-mono text-sm">
+              GET /api/compare
+            </code>
+          </p>
+          <p class="text-slate-600 text-sm mb-4">
+            Runs lookups across all 5 resolvers in parallel and returns a
+            combined result. Useful for DNS propagation checks.
+          </p>
+          <dl class="text-sm text-slate-600 space-y-3 mb-4">
+            <div class="flex flex-col gap-1">
+              <dt class="font-medium text-slate-700">
+                <code class="bg-slate-100 px-1 rounded">host</code>
+                <span class="font-normal text-slate-500 ml-2">required</span>
+              </dt>
+              <dd>Hostname to look up.</dd>
+            </div>
+            <div class="flex flex-col gap-1">
+              <dt class="font-medium text-slate-700">
+                <code class="bg-slate-100 px-1 rounded">type</code>
+                <span class="font-normal text-slate-500 ml-2">
+                  optional, default <code>A</code>
+                </span>
+              </dt>
+              <dd>Record type (same set as <code>/api/lookup</code>).</dd>
+            </div>
+            <div class="flex flex-col gap-1">
+              <dt class="font-medium text-slate-700">
+                <code class="bg-slate-100 px-1 rounded">transport</code>
+                <span class="font-normal text-slate-500 ml-2">
+                  optional, default <code>doh</code>
+                </span>
+              </dt>
+              <dd>
+                <code>doh</code> or <code>dot</code>. For DoT, Mullvad and
+                Control D are skipped (returned as errors in their result
+                entry).
+              </dd>
+            </div>
+          </dl>
+          <pre class="bg-slate-100 border border-slate-200 rounded p-4 text-xs font-mono text-slate-700 overflow-x-auto">
+{`{
+  "host": "example.com",
+  "type": "A",
+  "allAgree": true,
+  "results": [
+    {
+      "provider": "cloudflare",
+      "label": "Cloudflare",
+      "durationMs": 42,
+      "result": { "ok": true, "host": "example.com", "type": "A", "records": ["93.184.216.34"], "ttls": [3600] }
+    },
+    ...
+  ]
+}`}
+          </pre>
+          <p class="text-slate-600 text-sm mt-3">
+            <code>allAgree</code> is{" "}
+            <code>true</code>{" "}
+            when all 5 providers returned the same records. Counts as one
+            request against the rate limit.
+          </p>
+        </section>
+
+        <section class="mb-8">
+          <h2 class="text-xl font-semibold text-slate-700 mb-3">
             Rate limiting
           </h2>
           <p class="text-slate-600 text-sm mb-2">
-            Limits are applied per client (by IP or <code>X-Forwarded-For</code>
             / <code>X-Real-IP</code>{" "}
             when behind a proxy). Default: 60 requests per minute. When
             exceeded, the API returns 429 with{" "}
