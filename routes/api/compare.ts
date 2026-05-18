@@ -32,6 +32,7 @@ function isValidHostname(host: string): boolean {
 
 const VALID_TRANSPORTS = ["doh", "dot"] as const;
 type Transport = (typeof VALID_TRANSPORTS)[number];
+const DOT_UNSUPPORTED_ERROR = "DoT not available for this provider";
 
 /**
  * GET /api/compare?host=&type=&transport=
@@ -116,7 +117,7 @@ export const handler = define.handlers({
             ok: false as const,
             host: trimmedHost,
             type: recordType,
-            error: "DoT not available for this provider",
+            error: DOT_UNSUPPORTED_ERROR,
           };
         } else {
           const r = await dotLookup(trimmedHost, recordType, id as Provider);
@@ -151,8 +152,12 @@ export const handler = define.handlers({
       };
     });
 
-    const successResults = results.filter((r) => r.result.ok);
-    const allAgree = successResults.length === results.length &&
+    const comparableResults = results.filter((r) =>
+      r.result.ok || r.result.error !== DOT_UNSUPPORTED_ERROR
+    );
+    const successResults = comparableResults.filter((r) => r.result.ok);
+    const allAgree = successResults.length > 0 &&
+      successResults.length === comparableResults.length &&
       (() => {
         const sorted = successResults.map((r) =>
           [...(r.result as { records: unknown[] }).records].map(String).sort()
