@@ -1,5 +1,5 @@
 import { useSignal } from "@preact/signals";
-import type { CompareResponse, CompareProviderResult } from "../lib/compare.ts";
+import type { CompareProviderResult, CompareResponse } from "../lib/compare.ts";
 
 /** Props for the comparison results card. */
 export interface DigCompareProps {
@@ -18,12 +18,19 @@ function ProviderCard({ item }: { item: CompareProviderResult }) {
   const { label, durationMs, result } = item;
 
   if (!result.ok) {
-    const isUnsupported = result.error === "DoT not available for this provider";
+    const isUnsupported =
+      result.error === "DoT not available for this provider";
     return (
       <div class="rounded-lg border border-slate-200 bg-white/80 shadow-sm overflow-hidden flex flex-col">
         <div class="px-3 py-2 bg-slate-100 border-b border-slate-200 flex items-center justify-between gap-2">
           <span class="font-medium text-sm text-slate-700">{label}</span>
-          <span class={`text-xs px-1.5 py-0.5 rounded font-medium ${isUnsupported ? "bg-slate-200 text-slate-500" : "bg-red-100 text-red-700"}`}>
+          <span
+            class={`text-xs px-1.5 py-0.5 rounded font-medium ${
+              isUnsupported
+                ? "bg-slate-200 text-slate-500"
+                : "bg-red-100 text-red-700"
+            }`}
+          >
             {isUnsupported ? "N/A" : "Error"}
           </span>
         </div>
@@ -52,7 +59,9 @@ function ProviderCard({ item }: { item: CompareProviderResult }) {
                 >
                   <span class="break-all">{formatRecord(r)}</span>
                   {result.ttls?.[i] != null && (
-                    <span class="text-slate-400 shrink-0">TTL {result.ttls![i]}</span>
+                    <span class="text-slate-400 shrink-0">
+                      TTL {result.ttls![i]}
+                    </span>
                   )}
                 </li>
               ))}
@@ -76,15 +85,19 @@ function SkeletonCard() {
 }
 
 /** Comparison results: provider grid with agree/differ banner, Copy JSON. */
-export default function DigCompare({ response, loading = false }: DigCompareProps) {
+export default function DigCompare(
+  { response, loading = false }: DigCompareProps,
+) {
   const copied = useSignal(false);
 
   function copyJson() {
     if (!response) return;
-    navigator.clipboard.writeText(JSON.stringify(response, null, 2)).then(() => {
-      copied.value = true;
-      setTimeout(() => (copied.value = false), 2000);
-    });
+    navigator.clipboard.writeText(JSON.stringify(response, null, 2)).then(
+      () => {
+        copied.value = true;
+        setTimeout(() => (copied.value = false), 2000);
+      },
+    );
   }
 
   if (loading) {
@@ -128,7 +141,12 @@ export default function DigCompare({ response, loading = false }: DigCompareProp
         </button>
       </div>
       <div class="p-4 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
-        {results.map((item) => <ProviderCard key={item.provider} item={item} />)}
+        {results.map((item) => (
+          <ProviderCard
+            key={item.provider}
+            item={item}
+          />
+        ))}
       </div>
     </div>
   );

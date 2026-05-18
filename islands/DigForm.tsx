@@ -135,7 +135,10 @@ export default function DigForm({
         <span class="text-sm font-medium text-slate-600 mr-1">Mode:</span>
         <button
           type="button"
-          onClick={() => { mode.value = "single"; syncUrl(); }}
+          onClick={() => {
+            mode.value = "single";
+            syncUrl();
+          }}
           class={`px-3 py-1 text-sm rounded-md font-medium transition-colors ${
             mode.value === "single"
               ? "bg-emerald-600 text-white"
@@ -146,7 +149,10 @@ export default function DigForm({
         </button>
         <button
           type="button"
-          onClick={() => { mode.value = "compare"; syncUrl(); }}
+          onClick={() => {
+            mode.value = "compare";
+            syncUrl();
+          }}
           class={`px-3 py-1 text-sm rounded-md font-medium transition-colors ${
             mode.value === "compare"
               ? "bg-emerald-600 text-white"
@@ -261,7 +267,11 @@ export default function DigForm({
               disabled={loading || dotUnavailable}
               class="px-4 py-2 rounded-md bg-emerald-600 text-white font-medium hover:bg-emerald-700 focus:ring-2 focus:ring-emerald-500 focus:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
             >
-              {loading ? "Looking up…" : mode.value === "compare" ? "Compare" : "Look up"}
+              {loading
+                ? "Looking up…"
+                : mode.value === "compare"
+                ? "Compare"
+                : "Look up"}
             </button>
           </div>
         </div>

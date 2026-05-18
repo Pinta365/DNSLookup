@@ -72,7 +72,9 @@ function summarizeCompareResult(result: CompareResponse): string {
   if (uniqueRecords.length === 0) return status;
 
   const preview = uniqueRecords.slice(0, 2).join(", ");
-  const more = uniqueRecords.length > 2 ? ` +${uniqueRecords.length - 2} more` : "";
+  const more = uniqueRecords.length > 2
+    ? ` +${uniqueRecords.length - 2} more`
+    : "";
   return `${status}: ${preview}${more}`;
 }
 

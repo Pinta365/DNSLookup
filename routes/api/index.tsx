@@ -160,7 +160,9 @@ export default define.page(function ApiDocs() {
                   optional, default <code>A</code>
                 </span>
               </dt>
-              <dd>Record type (same set as <code>/api/lookup</code>).</dd>
+              <dd>
+                Record type (same set as <code>/api/lookup</code>).
+              </dd>
             </div>
             <div class="flex flex-col gap-1">
               <dt class="font-medium text-slate-700">
@@ -170,9 +172,9 @@ export default define.page(function ApiDocs() {
                 </span>
               </dt>
               <dd>
-                <code>doh</code> or <code>dot</code>. For DoT, Mullvad and
-                Control D are skipped (returned as errors in their result
-                entry).
+                <code>doh</code> or{" "}
+                <code>dot</code>. For DoT, Mullvad and Control D are skipped
+                (returned as errors in their result entry).
               </dd>
             </div>
           </dl>
@@ -193,8 +195,7 @@ export default define.page(function ApiDocs() {
 }`}
           </pre>
           <p class="text-slate-600 text-sm mt-3">
-            <code>allAgree</code> is{" "}
-            <code>true</code>{" "}
+            <code>allAgree</code> is <code>true</code>{" "}
             when all 5 providers returned the same records. Counts as one
             request against the rate limit.
           </p>

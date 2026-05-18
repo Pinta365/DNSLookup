@@ -1,9 +1,12 @@
 import { define } from "../../utils.ts";
 import { isSupportedType, type RecordType } from "../../lib/dns.ts";
-import { dohLookup, PROVIDERS, type Provider } from "../../lib/doh.ts";
+import { dohLookup, type Provider, PROVIDERS } from "../../lib/doh.ts";
 import { dotLookup, isDotSupported } from "../../lib/dot.ts";
 import { defaultLimiter, getClientKey } from "../../lib/rateLimit.ts";
-import type { CompareProviderResult, CompareResponse } from "../../lib/compare.ts";
+import type {
+  CompareProviderResult,
+  CompareResponse,
+} from "../../lib/compare.ts";
 
 const CORS_HEADERS = {
   "Access-Control-Allow-Origin": "*",
@@ -107,34 +110,36 @@ export const handler = define.handlers({
     const trimmedHost = host.trim();
     const recordType = type as RecordType;
 
-    const providerLookups = PROVIDERS.map(async ({ id, label }): Promise<CompareProviderResult> => {
-      const start = performance.now();
+    const providerLookups = PROVIDERS.map(
+      async ({ id, label }): Promise<CompareProviderResult> => {
+        const start = performance.now();
 
-      let result;
-      if (transport === "dot") {
-        if (!isDotSupported(id as Provider)) {
-          result = {
-            ok: false as const,
-            host: trimmedHost,
-            type: recordType,
-            error: DOT_UNSUPPORTED_ERROR,
-          };
+        let result;
+        if (transport === "dot") {
+          if (!isDotSupported(id as Provider)) {
+            result = {
+              ok: false as const,
+              host: trimmedHost,
+              type: recordType,
+              error: DOT_UNSUPPORTED_ERROR,
+            };
+          } else {
+            const r = await dotLookup(trimmedHost, recordType, id as Provider);
+            result = { ...r, host: trimmedHost, type: recordType };
+          }
         } else {
-          const r = await dotLookup(trimmedHost, recordType, id as Provider);
+          const r = await dohLookup(trimmedHost, recordType, id as Provider);
           result = { ...r, host: trimmedHost, type: recordType };
         }
-      } else {
-        const r = await dohLookup(trimmedHost, recordType, id as Provider);
-        result = { ...r, host: trimmedHost, type: recordType };
-      }
 
-      return {
-        provider: id as Provider,
-        label,
-        durationMs: Math.round(performance.now() - start),
-        result,
-      };
-    });
+        return {
+          provider: id as Provider,
+          label,
+          durationMs: Math.round(performance.now() - start),
+          result,
+        };
+      },
+    );
 
     const settled = await Promise.allSettled(providerLookups);
     const results: CompareProviderResult[] = settled.map((s, i) => {
@@ -162,7 +167,9 @@ export const handler = define.handlers({
         const sorted = successResults.map((r) =>
           [...(r.result as { records: unknown[] }).records].map(String).sort()
         );
-        return sorted.every((r) => JSON.stringify(r) === JSON.stringify(sorted[0]));
+        return sorted.every((r) =>
+          JSON.stringify(r) === JSON.stringify(sorted[0])
+        );
       })();
 
     const response: CompareResponse = {
